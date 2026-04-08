@@ -49,9 +49,7 @@ ruoyi_plus_uniapp/
 │   ├── package.json
 │   └── vite.config.js
 │
-└── ruoyi-plus-uniapp-docs/           # VitePress 文档项目
-    ├── docs/                         # 323+ 篇技术文档
-    └── PROJECT_PROGRESS.md           # 文档进度表
+└── docs/                             # 文档目录（位于 .claude/docs/）
 ```
 
 ---
@@ -164,26 +162,6 @@ npm run build:mp-weixin
 npm run type-check
 ```
 
-### 文档 (VitePress)
-
-```bash
-# 进入文档目录
-cd ruoyi-plus-uniapp-docs
-
-# 安装依赖
-pnpm install
-
-# 本地开发
-pnpm dev
-
-# 生产构建
-pnpm build
-
-# 部署
-pnpm deploy
-```
-
----
 
 ## 快速启动指南
 
@@ -341,7 +319,7 @@ R<T> {
 | `/next` | 下一步建议 |
 | `/sync` | 全量状态同步 |
 | `/start` | 项目快速了解 |
-| `/init-docs` | 文档初始化 |
+| `/init-docs` | 文档初始化（子模块已移除） |
 | `/update-status` | 增量状态更新 |
 | `/add-todo` | 添加待办事项 |
 
