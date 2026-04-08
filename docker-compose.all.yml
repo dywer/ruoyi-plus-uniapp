@@ -1,0 +1,154 @@
+# RuoYi-Vue-Plus 完整 Docker Compose 配置
+# 所有服务运行在容器中
+
+# 重要提示：
+# 1. MySQL 字符集已在 my.cnf 中配置为 utf8mb4
+# 2. 导入 SQL 前确保 my.cnf 已正确配置
+# 3. 如果已有乱码数据，参见 .claude/docs/encoding-issue-lesson.md
+
+services:
+  # ==================== MySQL ====================
+  mysql:
+    image: docker.1panel.live/library/mysql:8.0
+    container_name: ry-mysql
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ry-vue
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql
+      - ./docker/mysql/conf:/etc/mysql/conf.d
+      - ./docker/sql/ry_vue_5.X.sql:/docker-entrypoint-initdb.d/01-ry_vue.sql
+      - ./docker/sql/ry_job.sql:/docker-entrypoint-initdb.d/02-ry_job.sql
+      - ./docker/sql/ry_workflow.sql:/docker-entrypoint-initdb.d/03-ry_workflow.sql
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+    networks:
+      - ruoyi-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== Redis ====================
+  redis:
+    image: docker.1panel.live/library/redis:7.2.8
+    container_name: ry-redis
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker/redis/conf:/redis/config:rw
+      - ./docker/redis/data:/redis/data
+    command: "redis-server /redis/config/redis.conf --appendonly yes --requirepass ruoyi123"
+    networks:
+      - ruoyi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== RuoYi Server ====================
+  ruoyi-server:
+    build:
+      context: ./ruoyi-plus-uniapp-workflow/ruoyi-admin
+      dockerfile: Dockerfile
+    container_name: ry-server
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev-docker
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/server/logs:/ruoyi/server/logs
+      - ./docker/server/temp:/ruoyi/server/temp
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ruoyi-network
+
+  # ==================== Frontend (Nginx) ====================
+  frontend:
+    build:
+      context: ./plus-ui
+      dockerfile: Dockerfile
+    container_name: ry-frontend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - ruoyi-server
+    networks:
+      - ruoyi-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== SnailJob 任务调度中心 ====================
+  # 注意：需要自行部署 snail-job-server 镜像
+  # 官方文档：https://www.snailjob.com/
+  # snailjob-server:
+  #   image: registry.cn-hangzhou.aliyuncs.com/snail-job/snail-job-server:1.6.0
+  #   container_name: ry-snailjob
+  #   restart: unless-stopped
+  #   environment:
+  #     TZ: Asia/Shanghai
+  #     JAVA_OPTS: "-Dfile.encoding=UTF-8 -Xms512m -Xmx512m"
+  #     SJ_DB_HOST: ry-mysql
+  #     SJ_DB_PORT: 3306
+  #     SJ_DB_USER: root
+  #     SJ_DB_PASSWORD: root
+  #     SJ_DB_NAME: ry-vue
+  #     SJ_REDIS_HOST: ry-redis
+  #     SJ_REDIS_PORT: 6379
+  #     SJ_REDIS_PASSWORD: ruoyi123
+  #     SERVER_PORT: 8800
+  #   ports:
+  #     - "8800:8800"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - ruoyi-network
+
+  # ==================== Spring Boot Admin 监控 ====================
+  # 注意：可使用官方镜像或自行构建
+  # spring-boot-admin:
+  #   image: hapray/spring-boot-admin:2.7.10
+  #   container_name: ry-admin
+  #   restart: unless-stopped
+  #   environment:
+  #     TZ: Asia/Shanghai
+  #     JAVA_OPTS: "-Dfile.encoding=UTF-8 -Xms256m -Xmx256m"
+  #     SERVER_PORT: 9090
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - ruoyi-network
+
+networks:
+  ruoyi-network:
+    driver: bridge

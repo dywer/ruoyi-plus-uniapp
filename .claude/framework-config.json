@@ -1,0 +1,46 @@
+{
+  "name": "RuoYi-Vue-Plus",
+  "version": "5.x",
+  "description": "企业级JavaEE开发框架，基于Spring Boot 3.2+、Vue 3和Element Plus",
+  "backend_stack": {
+    "language": "Java",
+    "jdk": ">=17",
+    "framework": "Spring Boot 3.2+",
+    "orm": "MyBatis-Plus 3.5+",
+    "auth": "Sa-Token",
+    "scheduler": "SnailJob",
+    "cache": "Redis 6.0+",
+    "message_queue": "RabbitMQ (可选)",
+    "file_storage": "MinIO/OSS"
+  },
+  "frontend_stack": {
+    "framework": "Vue 3.3+",
+    "build_tool": "Vite 4+",
+    "ui_library": "Element Plus",
+    "admin_template": "Vben Admin 4.x",
+    "state_management": "Pinia",
+    "typescript": true
+  },
+  "infrastructure": {
+    "database": "MySQL 8.0",
+    "cache": "Redis 6.0+",
+    "server": "Nginx",
+    "os": "Linux/Windows/macOS"
+  },
+  "key_modules": [
+    "system_management",
+    "tenant_management",
+    "workflow_engine",
+    "file_management",
+    "job_scheduler",
+    "oauth_integration",
+    "data_permission",
+    "code_generator"
+  ],
+  "development_guidelines": {
+    "package_naming": "org.dromara.*",
+    "base_entity": "TenantEntity",
+    "converter": "MapstructUtils",
+    "primary_key_strategy": "Snowflake ID"
+  }
+}

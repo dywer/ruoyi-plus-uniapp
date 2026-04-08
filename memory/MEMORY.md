@@ -1,0 +1,2 @@
+- [MySQL 中文编码配置规范](mysql-encoding-config.md) — Docker MySQL utf8mb4 字符集配置和全链路 UTF-8 编码规范
+- [ECS 部署配置与优化](ecs-deployment-config.md) — 阿里云 ECS 部署配置、内存优化和资源限制设置

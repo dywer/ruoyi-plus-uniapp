@@ -1,0 +1,40 @@
+{
+  "model": "qwen3.5-plus",
+  "temperature": 0.1,
+  "max_tokens": 4096,
+  "auto_approve_large_changes": true,
+  "auto_commit": false,
+  "auto_push": false,
+  "behavioral_prompts": {
+    "on_file_creation": "当创建新文件时，请确保遵循 RuoYi-Vue-Plus 的代码规范。",
+    "on_code_modification": "修改代码时，请保持与现有代码风格的一致性，并确保符合 RuoYi-Vue-Plus 框架规范。",
+    "on_error_resolution": "遇到错误时，优先考虑 RuoYi-Vue-Plus 框架的最佳实践解决方案。"
+  },
+  "project_framework": "ruoyi-vue-plus",
+  "framework_config": {
+    "version": "5.x",
+    "backend": {
+      "language": "Java",
+      "jdk_version": "17+",
+      "framework": "Spring Boot 3.2+",
+      "orm": "MyBatis-Plus",
+      "auth": "Sa-Token",
+      "cache": "Redis"
+    },
+    "frontend": {
+      "framework": "Vue 3",
+      "ui_library": "Element Plus",
+      "admin_template": "Vben Admin"
+    },
+    "database": {
+      "primary": "MySQL 8.0",
+      "cache": "Redis 6.0+"
+    },
+    "key_features": [
+      "multi-tenancy",
+      "workflow_engine",
+      "file_upload_oss",
+      "scheduled_jobs"
+    ]
+  }
+}
