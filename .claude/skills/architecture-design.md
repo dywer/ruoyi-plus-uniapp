@@ -13,7 +13,7 @@
 #### 1.1 标准四层架构
 
 ```
-com.ruoyi.module/
+org.dromara.module/
 ├── controller/           # 控制层（Web 层）
 │   ├── UserController.java
 │   └── vo/              # 视图对象
@@ -425,7 +425,7 @@ public class OrderService {
 #### 3.2 包结构设计
 
 ```
-com.ruoyi/
+org.dromara/
 ├── common/               # 公共模块
 │   ├── core/            # 核心工具类
 │   ├── exception/       # 异常处理

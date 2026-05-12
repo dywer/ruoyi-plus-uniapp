@@ -440,7 +440,7 @@ public List<SysUser> selectUserList(SysUser user) {
 ## 相关文件
 
 - [security-guard.md](./security-guard.md) - Sa-Token 认证授权
-- [spring-security-guide.md](./spring-security-guide.md) - Spring Security 指南
+- [authentication-authorization-guide.md](./spring-security-guide.md) - 认证与授权开发指南（Sa-Token）
 - [backend-annotations.md](./backend-annotations.md) - 后端注解使用规范
 
 ---

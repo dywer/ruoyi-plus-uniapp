@@ -8,7 +8,7 @@
 
 ## 核心技术栈
 - **Java**: 17/21+
-- **Spring Boot**: 3.x/4.x
+- **Spring Boot**: 3.5.x
 - **Spring Cloud**: 微服务生态
 - **MyBatis-Plus/JPA**: 持久层框架
 - **Redis**: 分布式缓存

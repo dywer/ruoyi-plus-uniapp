@@ -1,4 +1,4 @@
-# Spring Security 与认证授权技能 (Spring Security Guide)
+# 认证与授权开发指南 (Authentication & Authorization Guide)
 
 ## 适用场景
 - 用户认证系统开发
@@ -17,51 +17,25 @@
 | 密码加密 | BCrypt | 强哈希密码加密 |
 | 权限模型 | RBAC | 基于角色的访问控制 |
 
-### Spring Security 核心概念
+### Sa-Token 核心概念
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    认证 (Authentication)                 │
-│  - 用户名密码认证                                         │
-│  - Token 认证                                            │
-│  - OAuth2 认证                                           │
+│                    认证 (Login)                          │
+│  - StpUtil.login(userId)                                │
+│  - StpUtil.isLogin()                                    │
+│  - StpUtil.getTokenValue()                              │
 └─────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    授权 (Authorization)                  │
-│  - 角色 (Role): ROLE_ADMIN, ROLE_USER                   │
-│  - 权限 (Permission): user:add, user:edit               │
-│  - 数据权限 (Data Scope)                                 │
+│                    授权 (Permission)                     │
+│  - @SaCheckPermission("system:user:add")                │
+│  - @SaCheckRole("admin")                                │
+│  - 数据权限 (@DataScope)                                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ## Sa-Token 配置
-
-### Maven 依赖
-```xml
-<dependencies>
-    <!-- Sa-Token 权限认证 -->
-    <dependency>
-        <groupId>cn.dev33</groupId>
-        <artifactId>sa-token-spring-boot3-starter</artifactId>
-        <version>1.37.0</version>
-    </dependency>
-    
-    <!-- Sa-Token + Redis -->
-    <dependency>
-        <groupId>cn.dev33</groupId>
-        <artifactId>sa-token-dao-redis-jackson</artifactId>
-        <version>1.37.0</version>
-    </dependency>
-    
-    <!-- Sa-Token 接口文档集成 -->
-    <dependency>
-        <groupId>cn.dev33</groupId>
-        <artifactId>sa-token-spring-aop</artifactId>
-        <version>1.37.0</version>
-    </dependency>
-</dependencies>
-```
 
 ### application.yml 配置
 ```yaml
@@ -96,58 +70,53 @@ sa-token:
 @RequiredArgsConstructor
 public class SysLoginService {
 
-    private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final SysUserService userService;
+    private final SysLicenseService sysLicenseService;
     private final RedisCache redisCache;
+    private final SocialAuthProperties socialAuthProperties;
 
     /**
      * 登录验证
      */
-    public LoginBody login(LoginBody loginBody) {
-        String username = loginBody.getUsername();
-        String password = loginBody.getPassword();
-        String uuid = loginBody.getUuid();
-        
+    public String login(SysLogin sysLogin) {
+        String username = sysLogin.getUsername();
+        String password = sysLogin.getPassword();
+        String code = sysLogin.getCode();
+        String uuid = sysLogin.getUuid();
+
         // 验证码校验
-        /*String code = redisCache.getCacheObject(CAPTCHA_CODE_KEY + uuid);
-        if (!code.equalsIgnoreCase(loginBody.getCode())) {
-            throw new CaptchaException("验证码错误");
-        }*/
-        
-        // 用户认证
-        UsernamePasswordAuthenticationToken authenticationToken = 
-            new UsernamePasswordAuthenticationToken(username, password);
-        
-        try {
-            Authentication authentication = authenticationManager.authenticate(authenticationToken);
-            LoginUser loginUser = (LoginUser) authentication.getPrincipal();
-            
-            // 生成 token
-            String token = jwtTokenProvider.createToken(loginUser);
-            
-            // 记录登录信息
-            recordLoginInfo(loginUser.getUser());
-            
-            return new LoginBody(token, loginUser.getUser());
-        } catch (BadCredentialsException e) {
-            throw new ServiceException("用户名或密码错误");
-        } catch (AuthenticationException e) {
-            throw new ServiceException("认证失败：" + e.getMessage());
+        String captcha = redisCache.getCacheObject(CAPTCHA_CODE_KEY + uuid);
+        redisCache.deleteObject(CAPTCHA_CODE_KEY + uuid);
+        if (captcha == null) {
+            throw new ServiceException("验证码已失效");
         }
+        if (!code.equalsIgnoreCase(captcha)) {
+            throw new ServiceException("验证码错误");
+        }
+
+        // 用户查询
+        SysUser user = userService.selectUserByUserName(username);
+        if (user == null) {
+            throw new ServiceException("用户不存在");
+        }
+
+        // 判断密码
+        if (!passwordEncoder.encode(password).equals(user.getPassword())) {
+            throw new ServiceException("用户密码错误");
+        }
+
+        // 记录登录信息
+        recordLoginInfo(user.getUserId());
+
+        // 生成 token
+        return StpUtil.getTokenSession().getTokenValue();
     }
-    
+
     /**
      * 登出
      */
-    public void logout(String token) {
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser != null) {
-            // 删除 token
-            SecurityUtils.logout();
-            // 记录登出信息
-            log.info("用户 {} 登出成功", loginUser.getUsername());
-        }
+    public void logout() {
+        StpUtil.logout();
     }
 }
 ```
@@ -162,106 +131,38 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private final SysPermissionService permissionService;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public LoginUser loadUserByUsername(String username) throws UsernameNotFoundException {
         SysUser user = userService.selectUserByUserName(username);
         if (user == null) {
             throw new UsernameNotFoundException("用户不存在");
         }
-        
+
         if (SysUser.STATUS_DISABLE.equals(user.getStatus())) {
             throw new DisabledException("用户已停用");
         }
-        
+
         return createLoginUser(user);
     }
-    
+
     private LoginUser createLoginUser(SysUser user) {
-        // 查询用户角色和权限
         Set<String> roles = permissionService.selectRoleKeys(user.getUserId());
         Set<String> permissions = permissionService.selectPermiKeys(user.getUserId());
-        
-        return new LoginUser(user.getUserId(), user.getDeptId(), user, roles, permissions);
+        return new LoginUser(user, roles, permissions);
     }
 }
 ```
 
 ## JWT Token 管理
 
-### JWT 工具类
+RuoYi-Vue-Plus 使用 Sa-Token 内置的 JWT 模式管理 Token：
+
 ```java
-@Component
-public class JwtTokenProvider {
+// Sa-Token 的 TokenSession 自动处理序列化
+StpUtil.getTokenSession().set("key", "value");
+String tokenValue = StpUtil.getTokenValue();
 
-    @Value("${token.secret}")
-    private String secret;
-    
-    @Value("${token.expireTime}")
-    private long expiration;
-
-    /**
-     * 生成 Token
-     */
-    public String createToken(LoginUser loginUser) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration * 60 * 1000);
-        
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", loginUser.getUser().getUserId());
-        claims.put("username", loginUser.getUsername());
-        claims.put("deptId", loginUser.getDeptId());
-        
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(loginUser.getUsername())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, secret)
-                .compact();
-    }
-    
-    /**
-     * 从 Token 中获取用户名
-     */
-    public String getUsernameFromToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(secret)
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
-    
-    /**
-     * 验证 Token 是否有效
-     */
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().setSigningKey(secret).parseClaimsJws(token);
-            return true;
-        } catch (SignatureException e) {
-            throw new ServiceException("Token 签名无效");
-        } catch (ExpiredJwtException e) {
-            throw new ServiceException("Token 已过期");
-        } catch (Exception e) {
-            throw new ServiceException("Token 无效");
-        }
-    }
-    
-    /**
-     * 刷新 Token
-     */
-    public String refreshToken(String token) {
-        String username = getUsernameFromToken(token);
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration * 60 * 1000);
-        
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, secret)
-                .compact();
-    }
-}
+// Token 验证由 Sa-Token 过滤器自动完成
+// 无需手动解析或验证 JWT
 ```
 
 ## 权限控制
@@ -279,33 +180,33 @@ public class SysUserController {
     @SaCheckPermission("system:user:add")
     @PostMapping
     public R<Void> add(@RequestBody SysUser user) {
-        return toAjax(userService.add(user));
+        return userService.insertUser(user);
     }
-    
+
     /**
      * 修改用户 - 需要 system:user:edit 权限
      */
     @SaCheckPermission("system:user:edit")
     @PutMapping
     public R<Void> edit(@RequestBody SysUser user) {
-        return toAjax(userService.edit(user));
+        return userService.updateUser(user);
     }
-    
+
     /**
      * 删除用户 - 需要 system:user:remove 权限
      */
     @SaCheckPermission("system:user:remove")
     @DeleteMapping("/{userIds}")
     public R<Void> remove(@PathVariable Long[] userIds) {
-        return toAjax(userService.remove(userIds));
+        return userService.deleteUserByIds(userIds);
     }
-    
+
     /**
      * 导出用户 - 需要 system:user:export 权限
      */
     @SaCheckPermission("system:user:export")
     @PostMapping("/export")
-    public void export(HttpServletResponse response, @RequestBody SysUser user) {
+    public void export(HttpServletResponse response, SysUser user) {
         userService.export(user, response);
     }
 }
@@ -313,65 +214,55 @@ public class SysUserController {
 
 ### 角色控制
 ```java
-@RestController
-@RequestMapping("/system/user")
-public class SysUserController {
+/**
+ * 仅管理员可访问
+ */
+@SaCheckRole("admin")
+@GetMapping("/admin")
+public R<Void> adminOnly() {
+    return R.ok("仅管理员可访问");
+}
 
-    /**
-     * 仅管理员可访问
-     */
-    @SaCheckRole("admin")
-    @GetMapping("/admin")
-    public R<Void> adminOnly() {
-        return R.ok("仅管理员可访问");
-    }
-    
-    /**
-     * 管理员或普通用户都可访问
-     */
-    @SaCheckRole(value = {"admin", "common"}, logical = Logical.OR)
-    @GetMapping("/common")
-    public R<Void> commonAccess() {
-        return R.ok("管理员或普通用户都可访问");
-    }
-    
-    /**
-     * 需要同时满足多个角色
-     */
-    @SaCheckRole(value = {"admin", "manager"}, logical = Logical.AND)
-    @GetMapping("/manager")
-    public R<Void> managerAccess() {
-        return R.ok("需要同时满足多个角色");
-    }
+/**
+ * 管理员或普通用户都可访问
+ */
+@SaCheckRole(value = {"admin", "common"}, logical = Logical.OR)
+@GetMapping("/common")
+public R<Void> commonAccess() {
+    return R.ok("管理员或普通用户都可访问");
+}
+
+/**
+ * 需要同时满足多个角色
+ */
+@SaCheckRole(value = {"admin", "manager"}, logical = Logical.AND)
+@GetMapping("/manager")
+public R<Void> managerAccess() {
+    return R.ok("需要同时满足多个角色");
 }
 ```
 
 ### 登录认证注解
 ```java
-@RestController
-@RequestMapping("/system/user")
-public class SysUserController {
+/**
+ * 需要登录才能访问
+ */
+@SaCheckLogin
+@GetMapping("/info")
+public R<SysUser> getInfo() {
+    return R.ok(StpUtil.getLoginObject(SysUser.class));
+}
 
-    /**
-     * 需要登录才能访问
-     */
-    @SaCheckLogin
-    @GetMapping("/info")
-    public R<SysUser> getInfo() {
-        return R.ok(SecurityUtils.getLoginUser().getUser());
-    }
-    
-    /**
-     * 可选登录（登录和未登录返回不同内容）
-     */
-    @SaCheckLogin(mode = SaMode.OR_IS_LOGIN)
-    @GetMapping("/optional")
-    public R<Object> optionalAuth() {
-        if (StpUtil.isLogin()) {
-            return R.ok("已登录：" + StpUtil.getLoginId());
-        } else {
-            return R.ok("未登录访客");
-        }
+/**
+ * 可选登录（登录和未登录返回不同内容）
+ */
+@SaCheckLogin(mode = SaMode.OR_IS_LOGIN)
+@GetMapping("/optional")
+public R<Object> optionalAuth() {
+    if (StpUtil.isLogin()) {
+        return R.ok("已登录：" + StpUtil.getLoginId());
+    } else {
+        return R.ok("未登录访客");
     }
 }
 ```
@@ -383,69 +274,47 @@ public class SysUserController {
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @class DataScope {
-    /**
-     * 部门别名
-     */
+public @interface DataScope {
+    /** 部门别名 */
     String deptAlias() default "";
-    
-    /**
-     * 用户别名
-     */
+    /** 用户别名 */
     String userAlias() default "";
-    
-    /**
-     * 权限表达式
-     */
+    /** 权限表达式 */
     String permission() default "";
 }
 ```
 
-### 数据权限处理
+### 数据权限实现
+RuoYi-Vue-Plus 使用 MyBatis-Plus 拦截器实现数据权限，无需手写 AOP：
+
+```java
+// 在 Mapper 方法上添加 @DataScope 注解
+@DataScope(deptAlias = "d", userAlias = "u")
+public List<SysUser> selectUserList(SysUser user) {
+    return baseMapper.selectList(buildQueryWrapper(user));
+}
+```
+
+MyBatis-Plus 数据权限插件会自动根据当前用户的角色范围拼接 SQL 条件：
+- 超级管理员：不限制
+- 部门管理员：`AND dept_id = ?`
+- 普通用户：`AND create_by = ?`
+
+### 数据权限工具类
 ```java
 @Component
-public class DataScopeInterceptor implements MybatisPlusInterceptor {
+public class DataPermissions {
+    /** 全部权限标识 */
+    public static final String ALL_PERMISSION = "*:*:*";
 
-    @Override
-    public void beforeQuery(MappedStatement ms, Object parameter) {
-        // 获取方法上的@DataScope 注解
-        DataScope dataScope = getDataScope(ms);
-        if (dataScope == null) {
-            return;
+    /**
+     * 判断是否拥有所有权限
+     */
+    public static boolean hasPermissions(String... permissions) {
+        if (ArrayUtil.isEmpty(permissions)) {
+            return true;
         }
-        
-        // 获取当前用户
-        LoginUser loginUser = SecurityUtils.getLoginUser();
-        if (loginUser == null) {
-            return;
-        }
-        
-        // 根据用户角色获取数据范围
-        String dataScopeSql = getDataScopeSql(loginUser, dataScope);
-        
-        // 追加到 SQL
-        appendDataScopeSql(parameter, dataScopeSql);
-    }
-    
-    private String getDataScopeSql(LoginUser loginUser, DataScope dataScope) {
-        // 超级管理员不受数据权限限制
-        if (loginUser.getUser().isAdmin()) {
-            return "";
-        }
-        
-        // 根据角色获取数据范围
-        Set<String> roles = loginUser.getRoles();
-        if (roles.contains("admin")) {
-            return ""; // 管理员查看所有数据
-        }
-        
-        // 部门数据权限
-        if (roles.contains("dept_manager")) {
-            return " AND dept_id = " + loginUser.getDeptId();
-        }
-        
-        // 个人数据权限
-        return " AND create_by = " + loginUser.getUserId();
+        return StpUtil.checkPermission(ALL_PERMISSION);
     }
 }
 ```
@@ -453,7 +322,7 @@ public class DataScopeInterceptor implements MybatisPlusInterceptor {
 ### 使用示例
 ```java
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements UserService {
 
     /**
      * 查询用户列表 - 带数据权限
@@ -461,7 +330,7 @@ public class UserServiceImpl implements UserService {
     @DataScope(deptAlias = "d", userAlias = "u")
     @Override
     public PageResult<SysUserVO> pageList(PageQuery query) {
-        Page<SysUser> page = userMapper.selectPage(query.toPage(), query.toWrapper());
+        Page<SysUser> page = baseMapper.selectPage(query.toPage(), buildQueryWrapper(query.getUser()));
         return PageResult.of(
             MapstructUtils.convert(page.getRecords(), SysUserVO.class),
             page.getTotal()
@@ -472,50 +341,55 @@ public class UserServiceImpl implements UserService {
 
 ## 安全配置
 
-### SecurityConfig 配置
+### CORS 跨域配置
 ```java
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
-public class SecurityConfig {
+@RequiredArgsConstructor
+public class CorsConfiguration {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            // 禁用 CSRF
-            .csrf(csrf -> csrf.disable())
-            // 禁用 Session
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // 配置请求授权
-            .authorizeHttpRequests(auth -> auth
-                // 静态资源和公开接口免认证
-                .requestMatchers("/login", "/register", "/captcha").permitAll()
-                .requestMatchers("/common/**").permitAll()
-                .requestMatchers("/webjars/**", "/favicon.ico").permitAll()
-                // 其他请求需要认证
-                .anyRequest().authenticated()
-            )
-            // 添加 JWT 过滤器
-            .addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
-            // 配置异常处理
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                .accessDeniedHandler(jwtAccessDeniedHandler)
-            );
-        
-        return http.build();
+    public CorsWebFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.addAllowedOrigin("*");
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setMaxAge(Duration.ofHours(1));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return new CorsWebFilter(source);
     }
-    
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-    
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+}
+```
+
+### 请求解密/响应加密过滤器
+```java
+@Bean
+public GlobalRequestDecryptFilter globalRequestDecryptFilter() {
+    return new GlobalRequestDecryptFilter();
+}
+
+@Bean
+public GlobalResponseEncryptFilter globalResponseEncryptFilter() {
+    return new GlobalResponseEncryptFilter();
+}
+```
+
+## 社交登录
+
+```java
+// JustAuth 集成
+@Autowired
+private AuthFactory authFactory;
+
+/**
+ * 获取第三方登录 URL
+ */
+@GetMapping("/auth/{source}")
+public R<String> renderCode(@PathVariable String source) throws IOException {
+    AuthRequest authRequest = authFactory.get(AuthSource.valueOf(source.toUpperCase()));
+    return R.ok(authRequest.authorize(AuthStateGenerator.makeUUid()));
 }
 ```
 
@@ -524,24 +398,23 @@ public class SecurityConfig {
 ### 认证安全
 - [ ] 密码使用 BCrypt 加密
 - [ ] Token 设置合理有效期
-- [ ] Token 刷新机制完善
 - [ ] 登录失败次数限制
 - [ ] 验证码防护
 
 ### 授权控制
-- [ ] 所有接口都有权限控制
+- [ ] 所有接口都有 @SaCheckPermission 权限控制
 - [ ] 权限注解使用正确
 - [ ] 角色划分合理
-- [ ] 数据权限生效
+- [ ] 数据权限注解生效
 
 ### Token 管理
-- [ ] Token 签名算法安全 (HS512)
+- [ ] Token 通过 Sa-Token 统一管理
 - [ ] Token 过期时间合理
-- [ ] Token 刷新流程完整
-- [ ] Token 黑名单机制
+- [ ] Token 刷新机制完整
+- [ ] Token 黑名单机制完善
 
 ### 日志审计
 - [ ] 登录日志完整记录
-- [ ] 操作日志记录
+- [ ] 操作日志通过 @Log 注解记录
 - [ ] 异常日志记录
 - [ ] 审计日志可追溯

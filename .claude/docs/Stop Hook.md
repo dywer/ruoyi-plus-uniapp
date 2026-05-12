@@ -98,7 +98,7 @@ cp your-sound.wav .claude/audio/completed.wav
 - 🟢 **普通优先级**: 代码规范、文档更新
 
 **RuoYi-Vue-Plus 规范检查**:
-- 包名必须为 `org.dromara.*` 或 `com.ruoyi.*`
+- 包名必须为 `org.dromara.*`
 - 权限注解 `@SaCheckPermission` 检查
 - Git 提交建议
 

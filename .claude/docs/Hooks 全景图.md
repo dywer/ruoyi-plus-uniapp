@@ -145,7 +145,7 @@
 ```
 
 **代码规范验证（RuoYi-Vue-Plus）**:
-- Java 包名必须以 `org.dromara` 或 `com.ruoyi` 开头
+- Java 包名必须以 `org.dromara` 开头
 - 违反规范的文件创建/编辑会被阻止
 
 **硬编码密钥检测**:

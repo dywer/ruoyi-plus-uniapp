@@ -78,11 +78,11 @@ package com.example.UserController;
 
 // ✅ 允许：符合 RuoYi-Vue-Plus 规范
 package org.dromara.system.controller;
-package com.ruoyi.system.service;
+package org.dromara.system.service;
 ```
 
 #### 验证逻辑
-- 所有 Java 文件包名必须以 `org.dromara` 或 `com.ruoyi` 开头
+- 所有 Java 文件包名必须以 `org.dromara` 开头
 - 违反规范的文件创建/编辑会被阻止
 
 ---
@@ -139,7 +139,7 @@ public class MyController {
 }
 
 // Hook 拦截输出
-代码规范违规：Java 包名必须以 'org.dromara' 或 'com.ruoyi' 开头，当前包名：com.example
+代码规范违规：Java 包名必须以 'org.dromara' 开头，当前包名：com.example
 ```
 
 ### 示例 4：检测到硬编码密钥
@@ -167,7 +167,7 @@ const apiKey = "sk-proj-abcdefghijklmnopqrstuvwxyz123456";
                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │  ① 代码规范验证                                          │
-│     - Java 包名检查 (org.dromara / com.ruoyi)            │
+│     - Java 包名检查 (org.dromara)                   │
 └─────────────────────────────────────────────────────────┘
                            │
                            ▼

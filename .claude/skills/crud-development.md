@@ -10,7 +10,7 @@
 ### 1. 包名规范
 - 必须以`org.dromara`开头
 - 错误示例：`com.example.project.module`
-- 正确示例：`org.dromara.project.module`
+- 正确示例：`org.dromara.system.user`
 
 ### 2. 实体类规范
 - 继承TenantEntity（如需要多租户支持）

@@ -11,8 +11,8 @@
 ### RuoYi 主要分支
 | 版本 | 基础框架 | JDK | 特点 |
 |------|----------|-----|------|
-| RuoYi-Vue | Spring Boot 4.x | 17+ | 官方默认版本 |
-| RuoYi-Vue-Plus | Spring Boot 3.2+ | 17+ | 集成 MyBatis-Plus、多租户 |
+| RuoYi-Vue | Spring Boot 3.x | 17+ | 官方默认版本 |
+| RuoYi-Vue-Plus | Spring Boot 3.5.x | 17+ | 集成 MyBatis-Plus、多租户、Sa-Token |
 | RuoYi-Vue-Pro | Spring Boot 3.x | 17+ | 芋道源码，功能最全 |
 | RuoYi-Cloud-Plus | Spring Cloud | 17+ | 微服务版本 |
 
@@ -20,14 +20,12 @@
 
 ### 标准模块划分
 ```
-ruoyi-project/
-├── ruoyi-admin/          # 启动模块
-├── ruoyi-common/         # 通用模块
-├── ruoyi-framework/      # 框架模块
-├── ruoyi-system/         # 系统模块
-├── ruoyi-generator/      # 代码生成
-├── ruoyi-quartz/         # 定时任务
-└── [业务模块]/           # 自定义业务模块
+RuoYi-Vue-Plus/
+├── ruoyi-admin/          # 启动模块 (Undertow + HikariCP)
+├── ruoyi-common/         # 通用模块 (24个: core/mybatis/redis/satoken...)
+├── ruoyi-modules/        # 业务模块 (system/generator/workflow/demo/job)
+├── ruoyi-extend/         # 扩展模块 (monitor-admin/snailjob-server)
+└── script/               # SQL 脚本 & Shell 脚本
 ```
 
 ### 业务模块结构
@@ -423,25 +421,42 @@ String snakeCase = StringUtils.toUnderScore("userName");
 # 项目配置
 ruoyi:
   name: RuoYi
-  version: 3.9.2
+  version: 5.6.1
   copyrightYear: 2026
 
-# 服务器配置
+# 服务器配置 (Undertow)
 server:
   port: 8080
   servlet:
     context-path: /
+  undertow:
+    max-http-post-size: 1GB
+    buffer-size: 512
+    threads:
+      io: 8
+      worker: 256
 
-# 数据源配置
+# 数据源配置 (HikariCP + dynamic-datasource)
 spring:
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    driverClassName: com.mysql.cj.jdbc.Driver
-    druid:
-      master:
-        url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
-        username: root
-        password: password
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      primary: master
+      strict: true
+      datasource:
+        master:
+          type: ${spring.datasource.type}
+          driverClassName: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+          username: root
+          password: root
+      hikari:
+        maxPoolSize: 20
+        minIdle: 10
+        connectionTimeout: 30000
+        validationTimeout: 5000
+        idleTimeout: 600000
+        maxLifetime: 1800000
 
 # Redis 配置
   data:
@@ -449,10 +464,24 @@ spring:
       host: localhost
       port: 6379
       database: 0
+      password: ruoyi123
+      timeout: 10s
+
+# Redisson 配置
+redisson:
+  keyPrefix:
+  threads: 4
+  nettyThreads: 8
+  singleServerConfig:
+    clientName: RuoYi-Vue-Plus
+    connectionMinimumIdleSize: 8
+    connectionPoolSize: 32
+    idleConnectionTimeout: 10000
+    timeout: 3000
 
 # MyBatis 配置
-mybatis:
-  typeAliasesPackage: com.ruoyi.**.domain
+mybatis-plus:
+  typeAliasesPackage: org.dromara.**.domain
   mapperLocations: classpath*:mapper/**/*Mapper.xml
   configLocation: classpath:mybatis/mybatis-config.xml
 ```

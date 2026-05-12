@@ -75,7 +75,6 @@ logging:
   level:
     root: INFO
     org.dromara: DEBUG
-    com.ruoyi: DEBUG
     org.springframework.web: DEBUG
     org.dromara.common.mybatis.core.mapper: DEBUG  # MyBatis SQL 调试
 

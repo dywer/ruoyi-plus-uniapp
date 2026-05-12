@@ -348,23 +348,21 @@ public class DictService {
 }
 ```
 
-### 连接池优化
+### 连接池优化 (HikariCP)
 
-#### Druid 连接池配置
 ```yaml
 spring:
   datasource:
-    druid:
-      initial-size: 5              # 初始连接数
-      min-idle: 10                 # 最小空闲连接
-      max-active: 20               # 最大活跃连接
-      max-wait: 60000              # 获取连接最大等待时间 (ms)
-      time-between-eviction-runs-millis: 60000  # 检测间隔
-      min-evictable-idle-time-millis: 300000    # 最小空闲时间
-      test-while-idle: true        # 空闲时检测
-      test-on-borrow: false        # 获取时不检测
-      test-on-return: false        # 归还时不检测
-      validation-query: SELECT 1   # 验证查询
+    type: com.zaxxer.hikari.HikariDataSource
+    dynamic:
+      hikari:
+        max-pool-size: 20          # 最大连接数
+        min-idle: 10               # 最小空闲连接
+        connection-timeout: 30000  # 获取连接超时时间 (ms)
+        validation-timeout: 5000   # 校验超时时间 (ms)
+        idle-timeout: 600000       # 空闲连接存活最大时间 (ms)
+        max-lifetime: 1800000      # 连接最长生命周期 (ms)
+        keepalive-time: 30000      # 保活检测间隔 (ms)
 ```
 
 ## 性能监控

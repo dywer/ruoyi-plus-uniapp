@@ -6,89 +6,107 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**RuoYi-Plus-UniApp** 是基于 **RuoYi-Vue-Plus 5.X** 的全栈开发项目，包含 AI 编程助手配置、完整源码和文档系统。
+**RuoYi-Vue-Plus 5.X** 是由 Dromara 社区维护的企业级快速开发平台，提供前后端分离的 SaaS 多租户解决方案。本项目集成了完整的 AI 编程助手配置（Claude Code）。
 
 ### 技术栈
 
 | 模块 | 技术栈 |
 |------|--------|
-| **后端** | Spring Boot 3.5.x + MyBatis-Plus 3.5.16 + Sa-Token 1.44.0 + Redisson 3.52.0 + JDK 17/21 |
+| **后端** | Spring Boot 3.5.x + MyBatis-Plus 3.5.16 + Sa-Token 1.44.0 + Redisson 3.52.0 + Undertow + JDK 17/21 |
 | **前端** | Vue 3.5.x + TypeScript 5.9.x + Element Plus 2.13.x + Vite 7.x + Pinia 3.x |
 | **移动端** | UniApp 3.x + Vue 3 + UView Plus + wxCropper |
-| **文档** | VitePress 1.6.x + Vue 3 |
 
 ---
 
 ## 目录结构
 
 ```
-ruoyi_plus_uniapp/
+ruoyi-plus-uniapp/
 ├── .claude/                          # Claude Code AI 配置
 │   ├── commands/                     # 10 个快捷命令
 │   ├── skills/                       # 40+ 专业技能
 │   ├── hooks/                        # 智能钩子
 │   ├── agents/                       # AI 代理
 │   ├── templates/                    # 文档模板
-│   └── docs/                         # 开发文档
+│   ├── docs/                         # 开发文档
+│   └── settings.json                 # 全局配置
 │
-├── ruoyi-plus-uniapp-workflow/       # 后端源码 (Spring Boot 3.5.x)
-│   ├── ruoyi-admin/                  # 启动入口模块
-│   ├── ruoyi-common/                 # 22 个通用模块
-│   ├── ruoyi-modules/                # 5 个业务模块
-│   ├── ruoyi-extend/                 # 扩展模块
-│   ├── script/                       # 脚本文件
-│   └── pom.xml                       # Maven 配置
+├── ruoyi-admin/                      # 启动入口模块 (Spring Boot)
+│   ├── src/main/java/org/dromara/    # Java 源码 (org.dromara 包名)
+│   ├── src/main/resources/           # 配置文件
+│   └── Dockerfile                    # Docker 构建文件
 │
+├── ruoyi-common/                     # 通用模块 (24 个)
+│   ├── ruoyi-common-core/            # 核心工具类、基础配置
+│   ├── ruoyi-common-mybatis/         # MyBatis-Plus 配置
+│   ├── ruoyi-common-redis/           # Redis / Redisson 配置
+│   ├── ruoyi-common-satoken/         # Sa-Token 认证配置
+│   ├── ruoyi-common-web/             # Web 通用配置
+│   ├── ...                           # 其他 19 个通用模块
+│
+├── ruoyi-modules/                    # 业务模块 (5 个)
+│   ├── ruoyi-system/                 # 系统管理
+│   ├── ruoyi-generator/              # 代码生成器
+│   ├── ruoyi-workflow/               # 工作流引擎 (WarmFlow)
+│   ├── ruoyi-demo/                   # 示例模块
+│   └── ruoyi-job/                    # 任务调度 (SnailJob)
+│
+├── ruoyi-extend/                     # 扩展模块
+│   ├── ruoyi-monitor-admin/          # Spring Boot Admin 监控
+│   └── ruoyi-snailjob-server/        # SnailJob 调度中心
+│
+├── script/                           # SQL 脚本 & Shell 脚本
+├── pom.xml                           # Maven 父工程配置
 ├── plus-ui/                          # 前端源码 (Vue 3 + Element Plus)
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.ts
-│
 ├── ruo-yi-uni-app-plus/              # 移动端源码 (UniApp + Vue 3)
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.js
-│
-└── docs/                             # 文档目录（位于 .claude/docs/）
+└── docker/                           # Docker 部署配置
 ```
 
 ---
 
 ## 后端模块结构
 
-### ruoyi-common 通用模块 (22 个)
+### ruoyi-common 通用模块 (24 个)
 
-- `ruoyi-common-bom` - 依赖版本管理
-- `ruoyi-common-core` - 核心工具类、基础配置
-- `ruoyi-common-doc` - 接口文档配置 (SpringDoc)
-- `ruoyi-common-encrypt` - 数据加密模块
-- `ruoyi-common-excel` - Excel 导入导出 (FastExcel)
-- `ruoyi-common-idempotent` - 幂等性处理
-- `ruoyi-common-job` - 定时任务 (SnailJob)
-- `ruoyi-common-json` - JSON 序列化配置
-- `ruoyi-common-log` - 日志处理模块
-- `ruoyi-common-mail` - 邮件发送模块
-- `ruoyi-common-mybatis` - MyBatis-Plus 配置
-- `ruoyi-common-oss` - 对象存储 (S3 兼容)
-- `ruoyi-common-ratelimiter` - 限流模块
-- `ruoyi-common-redis` - Redis 缓存模块 (Redisson)
-- `ruoyi-common-satoken` - Sa-Token 认证配置
-- `ruoyi-common-security` - 安全模块
-- `ruoyi-common-sensitive` - 数据脱敏模块
-- `ruoyi-common-sms` - 短信模块 (SMS4J)
-- `ruoyi-common-social` - 社交登录 (JustAuth)
-- `ruoyi-common-sse` - SSE 服务端推送
-- `ruoyi-common-tenant` - 多租户模块
-- `ruoyi-common-web` - Web 通用配置
-- `ruoyi-common-websocket` - WebSocket 模块
+| 模块 | 说明 |
+|------|------|
+| `ruoyi-common-bom` | 依赖版本管理 |
+| `ruoyi-common-core` | 核心工具类、枚举、基础实体 |
+| `ruoyi-common-doc` | SpringDoc 接口文档 |
+| `ruoyi-common-encrypt` | 数据加密模块 |
+| `ruoyi-common-excel` | Excel 导入导出 (FastExcel) |
+| `ruoyi-common-idempotent` | 幂等性处理 |
+| `ruoyi-common-job` | SnailJob 定时任务 |
+| `ruoyi-common-json` | JSON 序列化配置 |
+| `ruoyi-common-log` | 操作日志 |
+| `ruoyi-common-mail` | 邮件发送 (SMS4J) |
+| `ruoyi-common-mybatis` | MyBatis-Plus 分页/多租户插件 |
+| `ruoyi-common-oss` | 对象存储 (S3 兼容) |
+| `ruoyi-common-ratelimiter` | 限流 (Redis + SpEL) |
+| `ruoyi-common-redis` | Redis / Redisson 客户端 |
+| `ruoyi-common-satoken` | Sa-Token 登录认证 |
+| `ruoyi-common-security` | 密码安全加密 |
+| `ruoyi-common-sensitive` | 数据脱敏 |
+| `ruoyi-common-sms` | 短信发送 |
+| `ruoyi-common-social` | 社交登录 (JustAuth) |
+| `ruoyi-common-sse` | SSE 服务端推送 |
+| `ruoyi-common-tenant` | 多租户支持 |
+| `ruoyi-common-translation` | 数据翻译 |
+| `ruoyi-common-web` | Web 通用配置 |
+| `ruoyi-common-websocket` | WebSocket 模块 |
 
 ### ruoyi-modules 业务模块 (5 个)
 
-- `ruoyi-system` - 系统管理模块
-- `ruoyi-generator` - 代码生成器模块
-- `ruoyi-workflow` - 工作流模块 (WarmFlow)
-- `ruoyi-demo` - 示例模块
-- `ruoyi-job` - 任务调度模块
+- `ruoyi-system` — 系统管理（用户、角色、菜单、部门、岗位、字典等）
+- `ruoyi-generator` — 代码生成器
+- `ruoyi-workflow` — 工作流引擎 (WarmFlow)
+- `ruoyi-demo` — 功能示例
+- `ruoyi-job` — 分布式任务调度
+
+### ruoyi-extend 扩展模块 (2 个)
+
+- `ruoyi-monitor-admin` — Spring Boot Admin 服务监控
+- `ruoyi-snailjob-server` — SnailJob 调度中心
 
 ---
 
@@ -97,13 +115,10 @@ ruoyi_plus_uniapp/
 ### 后端 (Java/Spring Boot)
 
 ```bash
-# 进入后端目录
-cd ruoyi-plus-uniapp-workflow
-
 # 安装依赖 (需要 JDK 17+, Maven 3.8+)
 mvn clean install
 
-# 启动后端 (dev 环境)
+# 启动后端 (dev 环境, http://localhost:8080)
 cd ruoyi-admin
 mvn spring-boot:run -Pdev
 
@@ -120,7 +135,6 @@ mvn spotless:apply
 ### 前端 (Vue 3 + Element Plus)
 
 ```bash
-# 进入前端目录
 cd plus-ui
 
 # 安装依赖 (Node >=20.19.0)
@@ -132,17 +146,14 @@ npm run dev
 # 生产构建
 npm run build:prod
 
-# 代码检查
+# 代码检查与格式化
 npm run lint:eslint
-
-# 代码格式化
 npm run prettier
 ```
 
 ### 移动端 (UniApp)
 
 ```bash
-# 进入移动端目录
 cd ruo-yi-uni-app-plus
 
 # 安装依赖
@@ -162,6 +173,7 @@ npm run build:mp-weixin
 npm run type-check
 ```
 
+---
 
 ## 快速启动指南
 
@@ -182,8 +194,7 @@ npm >=8.19.0
 ### 2. 数据库初始化
 
 ```bash
-# 导入 SQL 脚本
-mysql -u root -p < ruoyi-plus-uniapp-workflow/script/sql.sql
+mysql -u root -p < script/sql/sql.sql
 ```
 
 ### 3. 配置修改
@@ -205,7 +216,7 @@ mysql -u root -p < ruoyi-plus-uniapp-workflow/script/sql.sql
 
 ```bash
 # 1. 启动后端
-cd ruoyi-plus-uniapp-workflow/ruoyi-admin
+cd ruoyi-admin
 mvn spring-boot:run -Pdev
 
 # 2. 启动前端
@@ -224,9 +235,8 @@ npm run dev
 
 ### 包名规范
 
-- 后端：`plus.ruoyi.*`
-- 前端：`@/` 路径别名
-- 移动端：`@/` 路径别名
+- 后端：`org.dromara.*`（以 `org.dromara.ruo yi` 为根包）
+- 前端/移动端：`@/` 路径别名
 
 ### 代码架构
 
@@ -239,7 +249,7 @@ Controller -> Service -> Mapper
 **目录结构约定：**
 
 ```java
-plus/ruoyi/
+org/dromara/
 ├── common/         // 通用模块
 │   ├── core/       // 核心工具
 │   ├── annotation/ // 自定义注解
@@ -319,7 +329,7 @@ R<T> {
 | `/next` | 下一步建议 |
 | `/sync` | 全量状态同步 |
 | `/start` | 项目快速了解 |
-| `/init-docs` | 文档初始化（子模块已移除） |
+| `/init-docs` | 文档初始化 |
 | `/update-status` | 增量状态更新 |
 | `/add-todo` | 添加待办事项 |
 
@@ -329,13 +339,12 @@ R<T> {
 
 ### 多租户架构
 
-框架支持 SaaS 多租户，通过 `@TenantColumn` 注解实现数据隔离：
+框架支持 SaaS 多租户，基于 MyBatis-Plus 租户插件自动注入租户条件：
 
 ```java
 @TableName("sys_user")
-@TenantColumn("dept_id")
 public class SysUser extends TenantEntity {
-    // 租户隔离字段
+    // 租户隔离由插件自动处理
 }
 ```
 

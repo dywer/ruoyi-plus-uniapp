@@ -1,17 +1,18 @@
 # Spring Boot 最佳实践技能 (Spring Boot Best Practices)
 
 ## 适用场景
-- Spring Boot 4.x 项目开发
+- Spring Boot 3.5.x 项目开发
 - 企业级应用开发
 - 微服务架构设计
 - 代码质量优化
 
 ## 核心技术栈
-- **Spring Boot**: 4.0.3+
-- **Spring Framework**: 7.x
+- **Spring Boot**: 3.5.x (实际版本 3.5.14)
+- **Spring Framework**: 6.x
 - **Java**: 17/21+
-- **MyBatis-Plus**: 3.5+
-- **Redis**: 6.0+
+- **MyBatis-Plus**: 3.5.16
+- **Redisson**: 3.52.0
+- **Sa-Token**: 1.44.0
 
 ## 项目配置规范
 

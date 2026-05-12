@@ -151,7 +151,7 @@ openapi: 3.0.3
 info:
   title: RuoYi-Vue-Plus API
   description: 企业级开发框架 API 文档
-  version: 3.9.2
+  version: 5.6.1
   contact:
     name: API Support
     email: support@ruoyi.vip

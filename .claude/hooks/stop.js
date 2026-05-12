@@ -332,7 +332,7 @@ function recommendNextSteps(context, changeAnalysis) {
 
   // RuoYi-Vue-Plus 规范检查
   recommendations.push({
-    text: '📋 规范检查：确保包名符合 org.dromara.* 或 com.ruoyi.* 规范',
+    text: '📋 规范检查：确保包名符合 org.dromara.* 规范',
     command: null,
     priority: 'normal'
   });

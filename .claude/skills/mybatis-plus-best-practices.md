@@ -6,8 +6,8 @@
 - 需要高效 ORM 框架的 Java 项目
 
 ## 核心技术栈
-- **MyBatis-Plus**: 3.5.x
-- **Spring Boot**: 3.x/4.x
+- **MyBatis-Plus**: 3.5.16 (实际版本)
+- **Spring Boot**: 3.5.x
 - **Java**: 17+
 - **MySQL**: 8.0+
 

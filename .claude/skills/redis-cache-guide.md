@@ -45,7 +45,7 @@
     <dependency>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-spring-boot-starter</artifactId>
-        <version>3.24.3</version>
+        <version>3.52.0</version>
     </dependency>
     
     <!-- 连接池 -->
@@ -65,15 +65,22 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password:  # 如有密码则配置
+      password: ruoyi123
       database: 0
-      timeout: 5000ms
-      lettuce:
-        pool:
-          max-active: 8      # 最大连接数
-          max-idle: 8        # 最大空闲连接
-          min-idle: 0        # 最小空闲连接
-          max-wait: 3000ms   # 连接超时时间
+      timeout: 10s
+      ssl.enabled: false
+
+# Redisson 配置
+redisson:
+  keyPrefix:
+  threads: 4
+  nettyThreads: 8
+  singleServerConfig:
+    clientName: RuoYi-Vue-Plus
+    connectionMinimumIdleSize: 8
+    connectionPoolSize: 32
+    idleConnectionTimeout: 10000
+    timeout: 3000
 ```
 
 ### RedisConfig 配置类

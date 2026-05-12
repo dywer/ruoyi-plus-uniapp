@@ -403,7 +403,7 @@ data:
     logging:
       level:
         root: INFO
-        com.ruoyi: DEBUG
+        org.dromara: DEBUG
 ---
 # k8s/secret.yaml
 apiVersion: v1

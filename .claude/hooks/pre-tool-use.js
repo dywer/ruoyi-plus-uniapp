@@ -187,10 +187,10 @@ function validateCodeRules(toolName, args) {
       const packageMatch = content.match(/package\s+([a-zA-Z0-9_.]+)/);
       if (packageMatch) {
         const packageName = packageMatch[1];
-        if (!packageName.startsWith('org.dromara') && !packageName.startsWith('com.ruoyi')) {
+        if (!packageName.startsWith('org.dromara')) {
           return {
             valid: false,
-            message: `Java 包名必须以 'org.dromara' 或 'com.ruoyi' 开头，当前包名：${packageName}`
+            message: `Java 包名必须以 'org.dromara' 开头，当前包名：${packageName}`
           };
         }
       }

@@ -45,7 +45,7 @@
 | 技能 | 职责 | 触发关键词 |
 |------|------|------------|
 | **security-guard** | Sa-Token 认证授权 | 安全、登录、认证、权限 |
-| **spring-security-guide** | Spring Security 完整指南 | Spring Security、过滤器 |
+| **spring-security-guide** | 认证与授权指南（Sa-Token） | 认证、授权、Sa-Token、JWT |
 | **data-permission** | 数据权限设计 | 数据权限、@DataScope |
 
 ---
@@ -135,14 +135,13 @@
 
 ---
 
-### 🔍 质量保障（4 个）
+### 🔍 质量保障（3 个）
 
 | 技能 | 职责 | 触发关键词 |
 |------|------|------------|
 | **bug-detective** | Bug 排查与问题定位 | Bug、排查、调试、日志分析 |
 | **performance-doctor** | 性能优化指南 | 性能优化、SQL 调优、JVM 调优 |
 | **code-patterns** | 代码模式库与最佳实践 | 代码模式、重构、反模式 |
-| **security-guard** | 安全认证授权（Sa-Token） | 安全、登录、权限、认证 |
 
 ---
 
@@ -175,9 +174,9 @@
 | 框架与平台 | 2 |
 | 多租户与缓存 | 2 |
 | 业务集成 | 4 |
-| 质量保障 | 4 |
+| 质量保障 | 3 |
 | 项目管理与方法论 | 5 |
-| **总计** | **42** |
+| **总计** | **41** |
 
 ---
 
